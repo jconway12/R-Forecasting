@@ -1,0 +1,267 @@
+---
+title: "Paper Task 2"
+author: "Jesse Conway"
+date: "4/8/2019"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Upload the data:
+
+```{r}
+library(readxl)
+DataVAR <- read_excel("~/Desktop/FinalPaperR/FinalVAR.xls")
+#View(DataVAR)
+library(forecast)
+library(vars)
+```
+First, I will run a VAR of income receipts on US assets abroad and FDI in the US both as shares of GDP.
+
+I used FDI as the first variable as I beliee it to be the least contemporaneously volatile.
+
+Set Up Time Series:
+
+```{r}
+x1 <- DataVAR[1:152,2:3]
+y1 <- ts(data = x1, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1973Q1 and end in 2018Q4)
+```
+
+VAR, p = 4 >> 4 lags
+
+```{r}
+var1 <- VAR(y1, p=4) 
+summary(var1)
+```
+
+Impies (3 years x 4 quarters per year = 12 quarters)
+
+```{r}
+impies <- irf(var1, n.ahead=8)
+plot(impies)
+```
+
+Here, we see that a shock to FDI in time t has a positive shock in itself during this time, which remains over time but decreases. Next, IR also shows a positive but small reaction to itself, which also decreases over time. Further, FDI appears to show some change in relation to a shock in IR, but no motion appears to be significant. This all corresponds with the logic that IR and FDI effect each other less significantly in short term shocks.
+
+
+Forecasting from VAR 3 years out:
+
+```{r}
+fcst1 <- predict(var1, n.ahead = 8)
+plot(fcst1)
+summary(fcst1)
+print(fcst1)
+```
+
+The forecast of FDI/GDP is said to increase slightly over the next 3 years, which is consistant with other forecasts created from VAR and arima modeling. It also has IR/GDP forecasted to slightly decrease, but very subtly. This is also consistant with previous models prediction.
+
+
+
+My next VAR is a regression on real GDP growth, the exchange rate with china (Yuan to 1 USD) and net imports as a fraction of GDP. I am putting GDP growth first followed by NX/GDP because even though a change in the exchange rate would theoretically have large effects on exports and imports, I believe these changes would not occur contemporaneously. Rather, I believe the exchange rate would be more sensitive to these types of rapid movements. Lasty, GDP growth would be least affected by either variable in time t, so it is first.
+
+
+Set Up Time Series:
+
+```{r}
+x2 <- DataVAR[1:152,5:7]
+y2 <- ts(data = x2, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1973Q1 and end in 2018Q4)
+```
+
+VAR, p = 4 >> 4 lags
+
+```{r}
+var2 <- VAR(y2, p=4) 
+summary(var2)
+```
+
+Impies (3 years x 4 quarters per year = 12 quarters)
+
+```{r}
+impies2 <- irf(var2, n.ahead=8)
+plot(impies2)
+```
+
+Here, we see real GDP growth has an effect on itself, but a non significant effect on both NX/GDP and the exchange rate with china. Net exports appears to have a decrease in period t+1, followed by oscillations, however none after the first initial decrease are significant. Also, a change in NX/GDP appears to have a significant negative effect on the exchange rate initially, which then increases back to normal.
+
+
+Forecasting from VAR 3 years out:
+
+```{r}
+fcst2 <- predict(var2, n.ahead = 8)
+plot(fcst2)
+print(fcst2)
+```
+The forecast of GDP growth appears to be realtively constant with some ups and downs, which follows the overall trend pattern. NX/GDP is forecasted to slightly decrease over the next 3 years, which is consistant with the other forecasts. The exchange rate of the yuan to 1 USD is forecasted to increase in the next few years. While the strength of the US dollar in relation to the yuan changes constantly. Here, this forecast predicts an increase in relative power of the US dollar.
+
+
+
+Lastly, I wanted to run a VAR using the dollar index and US GDP growth. GDP growth is the first variable as the dollar index is more likely to be a reactionary variable to GDP contemporaneously.
+
+Set Up Time Series:
+
+```{r}
+x3 <- DataVAR[1:152,9:10]
+y3 <- ts(data = x3, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1973Q1 and end in 2018Q4)
+```
+
+VAR, p = 4 >> 4 lags
+
+```{r}
+var3 <- VAR(y3, p=4) 
+summary(var3)
+```
+
+Impies (3 years x 4 quarters per year = 12 quarters)
+
+```{r}
+impies3 <- irf(var3, n.ahead=8)
+plot(impies3)
+```
+A shock to real GDP growth appears to have a significant positive relationship to itself in time 0, which is logical. A shock to real GDP growth also appears to have some effect on the dollar index, a slight increase in the strength of the dollar after 12 quarters. However, this is close to being insignificant. Lastly, it appears the dollar index has no significant effect on real GDP growth, but a positive and lasting effect on itself. 
+
+
+Forecasting from VAR 3 years out:
+
+```{r}
+fcst3 <- predict(var3, n.ahead = 8)
+plot(fcst3)
+print(fcst3)
+```
+
+Here, we see GDP growth expected to remain relatively constant, which less fluctuations as the previous VAR forecasted. The dollar index is forecasted to increase slightly in the next coming years, which is consistant with the previous VAR's forecast of the exchange rate with China. 
+
+ADD:  GDP growth and FDI (GDP then FDI because GDP less volatile)
+
+```{r}
+x4 <- DataVAR[1:152,12:13]
+y4 <- ts(data = x4, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1973Q1 and end in 2018Q4)
+```
+
+VAR, p = 4 >> 4 lags
+
+```{r}
+var4 <- VAR(y4, p=4) 
+summary(var4)
+```
+
+Impies (3 years x 4 quarters per year = 12 quarters)
+
+```{r}
+impies4 <- irf(var4, n.ahead=8)
+plot(impies4)
+```
+
+
+Forecasting from VAR 3 years out:
+
+```{r}
+fcst4 <- predict(var4, n.ahead = 8)
+plot(fcst4)
+print(fcst4)
+```
+
+
+Dollar Index and IR
+
+```{r}
+x5 <- DataVAR[1:152,15:16]
+y5 <- ts(data = x5, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1973Q1 and end in 2018Q4)
+```
+
+VAR, p = 4 >> 4 lags
+
+```{r}
+var5 <- VAR(y5, p=4) 
+summary(var5)
+```
+
+Impies 
+
+```{r}
+impies5 <- irf(var5, n.ahead=8)
+plot(impies5)
+```
+
+Forecasting from VAR 2 years out:
+
+```{r}
+fcst5 <- predict(var5, n.ahead = 8)
+plot(fcst5)
+print(fcst5)
+```
+
+
+Dollar Index, interest rates, GDP:
+
+
+```{r}
+x6 <- DataVAR[1:152,18:20]
+y6 <- ts(data = x6, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1973Q1 and end in 2018Q4)
+```
+
+VAR, p = 4 >> 4 lags
+
+```{r}
+var6 <- VAR(y6, p=4) 
+summary(var6)
+```
+
+Impies 
+
+```{r}
+impies6 <- irf(var6, n.ahead=8)
+plot(impies6)
+```
+
+Forecasting from VAR 2 years out:
+
+```{r}
+fcst6 <- predict(var6, n.ahead = 8)
+plot(fcst6)
+print(fcst6)
+```
+
+```{r}
+x7 <- DataVAR[1:152,22:23]
+y7 <- ts(data = x7, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1973Q1 and end in 2018Q4)
+```
+
+VAR, p = 4 >> 4 lags
+
+```{r}
+var7 <- VAR(y7, p=4) 
+summary(var7)
+```
+
+Impies 
+
+```{r}
+impies7 <- irf(var7, n.ahead=8)
+plot(impies7)
+```
+
+Forecasting from VAR 2 years out:
+
+```{r}
+fcst7 <- predict(var7, n.ahead = 8)
+plot(fcst7)
+print(fcst7)
+```
+
+
+
+
+
+
+
+
+
+
+
+

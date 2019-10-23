@@ -1,0 +1,58 @@
+---
+title: "Beginning to Forecast in R"
+author: "Dean Croushore"
+date: "Jan 29, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+First, manipulate the data in Excel and do plots there to be sure it all makes sense.
+
+Note that FRED seems to have an error, reporting values of 0 for M2OWN in the first two months, so delete those in the "data for R" worksheet.
+
+Download the page containing "data for R". Bring it into R.
+
+```{r}
+library(readxl)
+Data <- read_excel("~/Desktop/FinalPaperR/UpdatedData.xls")
+#View(Data)
+library(forecast)
+```
+Now, organize the data as a time series. 
+```{r}
+DollarIndex <- Data[53:236,9]
+DollarIndexts <- ts(data = DollarIndex, start = c(1973,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+NXGDP <- Data[1:236,8]
+NXGDPts <- ts(data = NXGDP, start = c(1960,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+FDIGDP <- Data[121:236,7]
+FDIGDPts <- ts(data = FDIGDP, start = c(1990,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+IRGDP <- Data[1:236,6]
+IRGDPts <- ts(data = IRGDP, start = c(1960,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+ExRate <-Data[85:236,10]
+ExRatets <- ts(data = ExRate, start = c(1981,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+```
+
+Download the package (pastecs), which is Package for Analysis of Space-Time Ecological Series.
+
+Load the pastecs library:
+
+```{r}
+library(pastecs)
+
+stat.desc(DollarIndexts)
+stat.desc(NXGDPts)
+stat.desc(FDIGDPts)
+stat.desc(IRGDPts)
+stat.desc(ExRatets)
+```
+
+

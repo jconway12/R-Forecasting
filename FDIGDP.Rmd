@@ -1,0 +1,371 @@
+---
+title: "FDIGDP"
+author: "Jesse Conway"
+date: "4/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+Data <- read_excel("~/Desktop/FinalPaperR/UpdatedData.xls")
+#View(Data)
+library(forecast)
+```
+
+```{r}
+FDIGDP <- Data[1:236,7]
+FDIGDPts <- ts(data = FDIGDP, start = c(1960,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+FDIGDP2 <- Data[5:236,7]
+FDIGDP2ts <- ts(data = FDIGDP2, start = c(1961,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+```
+
+ARIMA TESTING d = 0:
+
+mean trend:
+
+```{r}
+R000mean <- Arima(FDIGDPts, order = c(0,0,0)) 
+summary(R000mean)
+```
+
+BIC = -1513.12
+
+linear trend:
+
+```{r}
+R000lt <- Arima(FDIGDPts, order = c(0,0,0), include.drift = TRUE) 
+summary(R000lt)
+```
+
+BIC = -1630.4
+
+trend + seasonal dummies:
+
+```{r}
+Sdum <- seasonaldummy(FDIGDPts)
+R000sd <- Arima(FDIGDPts, order = c(0,0,0), include.drift = TRUE, xreg = Sdum) 
+summary(R000sd)
+
+```
+
+BIC = -1617.92
+
+trend + seasonal differences:
+
+```{r}
+R000sf <- Arima(FDIGDPts, order = c(0,0,0), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(R000sf)
+```
+
+BIC = -1509.04
+
+compare w/ same sample size:
+
+```{r}
+R0002 <- Arima(FDIGDP2ts, order = c(0,0,0), include.drift = TRUE) 
+summary(R0002)
+```
+
+BIC = -1630.4
+
+best model:
+
+```{r}
+RESR00lt <- residuals(R000lt)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR00lt)
+Pacf(RESR00lt)
+
+```
+
+AR(3)
+
+ARIMA testing:
+
+```{r}
+Rar1 <- Arima(FDIGDPts, order = c(1,0,0), include.drift = TRUE) 
+summary(Rar1)
+```
+
+BIC = -1647.48
+
+```{r}
+Rarma11 <- Arima(FDIGDPts, order = c(1,0,1), include.drift = TRUE) 
+summary(Rarma11)
+```
+
+BIC = -1661.31
+
+```{r}
+Rma1 <- Arima(FDIGDPts, order = c(0,0,1), include.drift = TRUE) 
+summary(Rma1)
+```
+
+BIC = -1638.6
+
+```{r}
+Rarma21 <- Arima(FDIGDPts, order = c(2,0,1), include.drift = TRUE) 
+summary(Rarma21)
+```
+
+BIC = -1659.89
+
+```{r}
+Rarma12 <- Arima(FDIGDPts, order = c(1,0,2), include.drift = TRUE) 
+summary(Rarma12)
+```
+
+BIC = -1658.82
+
+So, ARMA(1,1) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rarma11)
+```
+
+WHY IS IT NOT WHITE NOISE?
+
+Forecast: QUESTION (what to forecast on)?
+
+```{r}
+plot(forecast(Rarma11,h=8))
+for011 <- forecast(Rarma11, h = 8)
+print(for011)
+```
+
+ARIMA TESTING d = 1:
+
+Test for a unit root just to see
+
+
+Let's run the KPSS and ADF tests:
+
+```{r}
+Rmean <- Arima(FDIGDPts, order = c(0,0,0)) 
+ndiffs(RES_mean,test="kpss")
+ndiffs(RES_mean,test="adf")
+```
+
+This implies that there is a unit root, so lets see how taking it out changes the BIC:
+
+mean trend:
+
+```{r}
+R010mean <- Arima(FDIGDPts, order = c(0,1,0)) 
+summary(R010mean)
+```
+
+BIC = -1555.2
+
+linear trend:
+
+```{r}
+R010lt <- Arima(FDIGDPts, order = c(0,1,0), include.drift = TRUE) 
+summary(R010lt)
+```
+
+BIC = -1549.76
+
+trend + seasonal dummies:
+
+```{r}
+Sdum2 <- seasonaldummy(FDIGDPts)
+R010sd <- Arima(FDIGDPts, order = c(0,1,0), xreg = Sdum2) 
+summary(R010sd)
+
+```
+
+BIC = -1548.26
+
+trend + seasonal differences:
+
+```{r}
+R010sf <- Arima(FDIGDPts, order = c(0,1,0), seasonal = c(0,1,0)) 
+summary(R010sf)
+```
+
+BIC = -1384.38
+
+compare w/ same sample size:
+
+```{r}
+R0102 <- Arima(FDIGDP2ts, order = c(0,1,0)) 
+summary(R0102)
+```
+
+BIC = -1524.69
+
+best model:
+
+```{r}
+RESR010mean <- residuals(R010mean)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR010mean)
+Pacf(RESR010mean)
+
+```
+
+
+ARIMA testing:
+
+```{r}
+Rima11 <- Arima(FDIGDPts, order = c(0,1,1)) 
+summary(Rima11)
+```
+
+BIC = -1653.45
+
+
+```{r}
+Rari11 <- Arima(FDIGDPts, order = c(1,1,0)) 
+summary(Rari11)
+```
+
+BIC = -1633.05
+
+```{r}
+Rarima111 <- Arima(FDIGDPts, order = c(1,1,1)) 
+summary(Rarima111)
+```
+
+BIC = -1649.27
+
+```{r}
+Rima12 <- Arima(FDIGDPts, order = c(0,1,2)) 
+summary(Rima12)
+```
+
+BIC = -1648.94
+
+
+
+So, MA(1) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rima11)
+```
+
+White noise!
+
+Forecast: QUESTION (what to forecast on and how many quarters out)?
+
+```{r}
+plot(forecast(Rima11,h=8))
+for0112 <- forecast(Rima11, h = 8)
+print(for0112)
+```
+
+
+* forecasts 2 years out?
+
+SMOOTHING MODELS:
+
+Plot:
+
+```{r}
+library(ggplot2)
+autoplot(FDIGDPts) +
+ylab("FDI/GDP") + xlab("Year")
+```
+
+
+Simple Smoothing:
+
+```{r}
+s1 <- ses(FDIGDPts, h = 8, level = c(80, 95), alpha = 0.1)
+autoplot(s1) +
+autolayer(fitted(s1), series="Fitted") +
+ylab("FDI/GDP") + xlab("Year")
+```
+
+
+```{r}
+s2 <- ses(FDIGDPts, h = 8, level = c(80, 95), alpha = 0.5)
+autoplot(s2) +
+autolayer(fitted(s2), series="Fitted") +
+ylab("FDI/GDP") + xlab("Year")
+```
+
+
+```{r}
+s3 <- ses(FDIGDPts, h = 8, level = c(80, 95), alpha = 0.9)
+autoplot(s3) +
+autolayer(fitted(s3), series="Fitted") +
+ylab("FDI/GDP") + xlab("Year")
+```
+
+```{r}
+ss4 <- ses(FDIGDPts)
+ summary(ss4)
+ 
+```
+
+BIC = -1037.028
+Alpha = 0.294 
+
+
+```{r}
+s4 <- ses(FDIGDPts, h = 8, level = c(80, 95))
+autoplot(s4) +
+autolayer(fitted(s4), series="Fitted") +
+ylab("FDI/GDP")
+```
+
+
+Holt method:
+
+```{r}
+hr1 <- holt(FDIGDPts)
+summary(hr1)
+```
+
+BIC = -1024.980 
+
+```{r}
+hr1f <- holt(FDIGDPts, h = 8, level = c(80, 95))
+autoplot(hr1f) +
+autolayer(fitted(hr1f), series="Fitted") +
+ylab("FDI/GDP") + xlab("Year")
+```
+
+
+Holt-Winters method:
+
+```{r}
+hrw1 <- hw(FDIGDPts)
+summary(hrw1)
+```
+
+BIC = -979.9366 
+
+
+```{r}
+hrw1f <- hw(FDIGDPts, h = 8, level = c(80, 95))
+autoplot(hrw1f) +
+autolayer(fitted(hrw1f), series="Fitted") +
+ylab("FDI/GDP") + xlab("Year")
+```
+
+
+
+
+

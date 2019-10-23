@@ -1,0 +1,384 @@
+---
+title: "DollarIndex"
+author: "Jesse Conway"
+date: "4/23/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+Data <- read_excel("~/Desktop/FinalPaperR/UpdatedData.xls")
+#View(Data)
+library(forecast)
+```
+
+```{r}
+DollarIndex <- Data[53:236,9]
+DollarIndexts <- ts(data = DollarIndex, start = c(1973,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+DollarIndex2 <- Data[57:236,9]
+DollarIndex2ts <- ts(data = DollarIndex2, start = c(1974,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+```
+
+ARIMA TESTING d = 0:
+
+mean trend:
+
+```{r}
+R000mean <- Arima(DollarIndexts, order = c(0,0,0)) 
+summary(R000mean)
+RES_mean = residuals(R000mean)
+```
+
+BIC = 1343.64
+
+linear trend:
+
+```{r}
+R000lt <- Arima(DollarIndexts, order = c(0,0,0), include.drift = TRUE) 
+summary(R000lt)
+```
+
+BIC = 1342.53
+
+trend + seasonal dummies:
+
+```{r}
+Sdum <- seasonaldummy(DollarIndexts)
+R000sd <- Arima(DollarIndexts, order = c(0,0,0), include.drift = TRUE, xreg = Sdum) 
+summary(R000sd)
+
+```
+
+BIC = 1358.15
+
+trend + seasonal differences:
+
+```{r}
+R000sf <- Arima(DollarIndexts, order = c(0,0,0), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(R000sf)
+```
+
+BIC = 1140.21
+
+compare w/ same sample size:
+
+```{r}
+R0002 <- Arima(DollarIndex2ts, order = c(0,0,0), include.drift = TRUE) 
+summary(R0002)
+```
+
+BIC = 1317.17
+
+best model:
+
+```{r}
+RESR00sf <- residuals(R000sf)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR00sf)
+Pacf(RESR00sf)
+
+```
+
+MA(4) or AR(4)
+
+ARIMA testing:
+
+```{r}
+Rma4 <- Arima(DollarIndexts, order = c(0,0,4), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma4)
+```
+
+BIC = 834.54
+
+
+```{r}
+Rar4 <- Arima(DollarIndexts, order = c(4,0,0), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rar4)
+```
+
+BIC = 896.94
+
+```{r}
+Rarma11 <- Arima(DollarIndexts, order = c(1,0,1), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rarma11)
+```
+
+BIC = 889.93
+
+```{r}
+Rma2 <- Arima(DollarIndexts, order = c(0,0,2), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma2)
+```
+
+BIC = 938.39
+
+```{r}
+Rma3 <- Arima(DollarIndexts, order = c(0,0,3), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma3)
+```
+
+BIC = 849.96
+
+```{r}
+Rarma14 <- Arima(DollarIndexts, order = c(1,0,4), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rarma14)
+```
+
+BIC = 839.69
+
+```{r}
+Rma5 <- Arima(DollarIndexts, order = c(0,0,5), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma5)
+```
+
+BIC = 839.69
+
+So, MA(4) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rma4)
+```
+
+White noise!
+
+Forecast: QUESTION (what to forecast on)?
+
+```{r}
+plot(forecast(Rma4,h=8))
+for011 <- forecast(Rma4, h = 8)
+print(for011)
+```
+
+ARIMA TESTING d = 1:
+
+Test for a unit root just to see
+
+
+Let's run the KPSS and ADF tests:
+
+```{r}
+Rmean <- Arima(DollarIndexts, order = c(0,0,0)) 
+ndiffs(RES_mean,test="kpss")
+ndiffs(RES_mean,test="adf")
+```
+
+This implies that there is a unit root, so lets see how taking it out changes the BIC:
+
+mean trend:
+
+```{r}
+R010mean <- Arima(DollarIndexts, order = c(0,1,0)) 
+summary(R010mean)
+```
+
+BIC = 828.23
+
+linear trend:
+
+```{r}
+R010lt <- Arima(DollarIndexts, order = c(0,1,0), include.drift = TRUE) 
+summary(R010lt)
+```
+
+BIC = 833.44
+
+trend + seasonal dummies:
+
+```{r}
+Sdum2 <- seasonaldummy(DollarIndexts)
+R010sd <- Arima(DollarIndexts, order = c(0,1,0), xreg = Sdum2) 
+summary(R010sd)
+
+```
+
+BIC = 842.73
+
+trend + seasonal differences:
+
+```{r}
+R010sf <- Arima(DollarIndexts, order = c(0,1,0), seasonal = c(0,1,0)) 
+summary(R010sf)
+```
+
+BIC = 906.81
+
+compare w/ same sample size:
+
+```{r}
+R0102 <- Arima(DollarIndex2ts, order = c(0,1,0)) 
+summary(R0102)
+```
+
+BIC = 807.85
+
+best model:
+
+```{r}
+RESR010mean <- residuals(R010mean)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR010mean)
+Pacf(RESR010mean)
+
+```
+
+
+ARIMA testing:
+
+```{r}
+Rima11 <- Arima(DollarIndexts, order = c(0,1,1)) 
+summary(Rima11)
+```
+
+BIC = 815.12
+
+
+```{r}
+Rari11 <- Arima(DollarIndexts, order = c(1,1,0)) 
+summary(Rari11)
+```
+
+BIC = 816.54
+
+```{r}
+Rarima111 <- Arima(DollarIndexts, order = c(1,1,1)) 
+summary(Rarima111)
+```
+
+BIC = 820.32
+
+```{r}
+Rima12 <- Arima(DollarIndexts, order = c(0,1,2)) 
+summary(Rima12)
+```
+
+BIC = 820.32
+
+
+
+So, MA(1) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rima11)
+```
+
+White noise!
+
+Forecast: QUESTION (what to forecast on and how many quarters out)?
+
+```{r}
+plot(forecast(Rima11,h=8))
+for0112 <- forecast(Rima11, h = 8)
+print(for0112)
+```
+
+
+* forecasts 2 years out?
+
+SMOOTHING MODELS:
+
+Plot:
+
+```{r}
+library(ggplot2)
+autoplot(DollarIndexts) +
+ylab("NX/GDP") + xlab("Year")
+```
+
+
+Simple Smoothing:
+
+```{r}
+s1 <- ses(DollarIndexts, h = 8, level = c(80, 95), alpha = 0.1)
+autoplot(s1) +
+autolayer(fitted(s1), series="Fitted") +
+ylab("Dollar Index") + xlab("Year")
+```
+
+
+```{r}
+s2 <- ses(DollarIndexts, h = 8, level = c(80, 95), alpha = 0.5)
+autoplot(s2) +
+autolayer(fitted(s2), series="Fitted") +
+ylab("Dollar Index") + xlab("Year")
+```
+
+
+```{r}
+s3 <- ses(DollarIndexts, h = 8, level = c(80, 95), alpha = 0.9)
+autoplot(s3) +
+autolayer(fitted(s3), series="Fitted") +
+ylab("Dollar Index") + xlab("Year")
+```
+
+```{r}
+ss4 <- ses(DollarIndexts)
+ summary(ss4)
+ 
+```
+
+BIC = 1279.549 
+Alpha = 0.9999
+
+
+```{r}
+s4 <- ses(DollarIndexts, h = 8, level = c(80, 95))
+autoplot(s4) +
+autolayer(fitted(s4), series="Fitted") +
+ylab("Dollar Index")
+```
+
+
+Holt method:
+
+```{r}
+hr1 <- holt(DollarIndexts)
+summary(hr1)
+```
+
+BIC = 1289.344 
+
+```{r}
+hr1f <- holt(DollarIndexts, h = 8, level = c(80, 95))
+autoplot(hr1f) +
+autolayer(fitted(hr1f), series="Fitted") +
+ylab("Dollar Index") + xlab("Year")
+```
+
+
+Holt-Winters method:
+
+```{r}
+hrw1 <- hw(DollarIndexts)
+summary(hrw1)
+```
+
+BIC = 1310.400
+
+
+```{r}
+hrw1f <- hw(DollarIndexts, h = 8, level = c(80, 95))
+autoplot(hrw1f) +
+autolayer(fitted(hrw1f), series="Fitted") +
+ylab("Dollar Index") + xlab("Year")
+```

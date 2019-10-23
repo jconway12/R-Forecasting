@@ -1,0 +1,363 @@
+---
+title: "IRGDP"
+author: "Jesse Conway"
+date: "4/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+Data <- read_excel("~/Desktop/FinalPaperR/UpdatedData.xls")
+#View(Data)
+library(forecast)
+```
+
+```{r}
+IRGDP <- Data[1:236,6]
+IRGDPts <- ts(data = IRGDP, start = c(1960,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+IRGDP2 <- Data[5:236,6]
+IRGDP2ts <- ts(data = IRGDP2, start = c(1961,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+```
+
+ARIMA TESTING d = 0:
+
+mean trend:
+
+```{r}
+R000mean <- Arima(IRGDPts, order = c(0,0,0)) 
+summary(R000mean)
+RES_mean = residuals(R000mean)
+```
+
+BIC = -2631.94
+
+linear trend:
+
+```{r}
+R000lt <- Arima(IRGDPts, order = c(0,0,0), include.drift = TRUE) 
+summary(R000lt)
+```
+
+BIC = -2628.27
+
+trend + seasonal dummies:
+
+```{r}
+Sdum <- seasonaldummy(IRGDPts)
+R000sd <- Arima(IRGDPts, order = c(0,0,0), xreg = Sdum) 
+summary(R000sd)
+
+```
+
+BIC = -2615.84
+
+trend + seasonal differences:
+
+```{r}
+R000sf <- Arima(IRGDPts, order = c(0,0,0), seasonal = c(0,1,0)) 
+summary(R000sf)
+```
+
+BIC = -2871.64
+
+compare w/ same sample size:
+
+```{r}
+R0002 <- Arima(IRGDP2ts, order = c(0,0,0)) 
+summary(R0002)
+```
+
+BIC = -2583.31
+
+best model:
+
+```{r}
+RESR00sf <- residuals(R000sf)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR00sf)
+Pacf(RESR00sf)
+
+```
+
+mixed?
+
+ARIMA testing:
+
+```{r}
+Rma1 <- Arima(IRGDPts, order = c(0,0,1), seasonal = c(0,1,0)) 
+summary(Rma1)
+```
+
+BIC = -2947.89
+
+```{r}
+Rar1 <- Arima(IRGDPts, order = c(1,0,0), seasonal = c(0,1,0)) 
+summary(Rar1)
+```
+
+BIC = -2978.03
+
+```{r}
+Rarma11 <- Arima(IRGDPts, order = c(1,0,1), seasonal = c(0,1,0)) 
+summary(Rarma11)
+```
+
+BIC= -2972.64
+
+```{r}
+Rar2 <- Arima(IRGDPts, order = c(2,0,0), seasonal = c(0,1,0)) 
+summary(Rar2)
+```
+
+BIC = -2972.69
+
+So, AR(1) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rar1)
+```
+
+not even close...
+
+Forecast: QUESTION (what to forecast on)?
+
+```{r}
+plot(forecast(Rar1,h=8))
+for011 <- forecast(Rar1, h = 8)
+print(for011)
+```
+
+ARIMA TESTING d = 1:
+
+Test for a unit root just to see
+
+
+Let's run the KPSS and ADF tests:
+
+```{r}
+Rmean <- Arima(IRGDPts, order = c(0,0,0)) 
+ndiffs(RES_mean,test="kpss")
+ndiffs(RES_mean,test="adf")
+```
+
+This implies that there is a unit root, so lets see how taking it out changes the BIC:
+
+mean trend:
+
+```{r}
+R010mean <- Arima(IRGDPts, order = c(0,1,0)) 
+summary(R010mean)
+```
+
+BIC =-3116.52
+
+linear trend:
+
+```{r}
+R010lt <- Arima(IRGDPts, order = c(0,1,0), include.drift = TRUE) 
+summary(R010lt)
+```
+
+BIC = -3111.14
+
+trend + seasonal dummies:
+
+```{r}
+Sdum2 <- seasonaldummy(IRGDPts)
+R010sd <- Arima(IRGDPts, order = c(0,1,0), xreg = Sdum2) 
+summary(R010sd)
+
+```
+
+BIC = -3104.67
+
+trend + seasonal differences:
+
+```{r}
+R010sf <- Arima(IRGDPts, order = c(0,1,0), seasonal = c(0,1,0)) 
+summary(R010sf)
+```
+
+BIC = -2921.64
+
+compare w/ same sample size:
+
+```{r}
+R0102 <- Arima(IRGDP2ts, order = c(0,1,0)) 
+summary(R0102)
+```
+
+BIC = -3059.66
+
+best model:
+
+```{r}
+RESR010mean <- residuals(R010mean)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR010mean)
+Pacf(RESR010mean)
+
+```
+
+
+ARIMA testing:
+
+```{r}
+Rima11 <- Arima(IRGDPts, order = c(0,1,1)) 
+summary(Rima11)
+```
+
+BIC = -3129.68
+
+
+```{r}
+Rari11 <- Arima(IRGDPts, order = c(1,1,0)) 
+summary(Rari11)
+```
+
+BIC = -3129.98
+
+```{r}
+Rarima111 <- Arima(IRGDPts, order = c(1,1,1)) 
+summary(Rarima111)
+```
+
+BIC = -3124.53
+
+```{r}
+Rari12 <- Arima(IRGDPts, order = c(2,1,0)) 
+summary(Rari12)
+```
+
+BIC = -3124.52
+
+
+
+So, AR(1) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rari11)
+```
+
+White noise!
+
+Forecast: QUESTION (what to forecast on and how many quarters out)?
+
+```{r}
+plot(forecast(Rari11,h=8))
+for0112 <- forecast(Rari11, h = 8)
+print(for0112)
+```
+
+
+* forecasts 2 years out?
+
+SMOOTHING MODELS:
+
+Plot:
+
+```{r}
+library(ggplot2)
+autoplot(IRGDPts) +
+ylab("IR/GDP") + xlab("Year")
+```
+
+
+Simple Smoothing:
+
+```{r}
+s1 <- ses(IRGDPts, h = 8, level = c(80, 95), alpha = 0.1)
+autoplot(s1) +
+autolayer(fitted(s1), series="Fitted") +
+ylab("IR/GDP") + xlab("Year")
+```
+
+
+```{r}
+s2 <- ses(IRGDPts, h = 8, level = c(80, 95), alpha = 0.5)
+autoplot(s2) +
+autolayer(fitted(s2), series="Fitted") +
+ylab("IR/GDP") + xlab("Year")
+```
+
+
+```{r}
+s3 <- ses(IRGDPts, h = 8, level = c(80, 95), alpha = 0.9)
+autoplot(s3) +
+autolayer(fitted(s3), series="Fitted") +
+ylab("IR/GDP") + xlab("Year")
+```
+
+```{r}
+ss4 <- ses(IRGDPts)
+ summary(ss4)
+ 
+```
+
+BIC = -2518.931 
+Alpha = 0.7171
+
+
+```{r}
+s4 <- ses(IRGDPts, h = 8, level = c(80, 95))
+autoplot(s4) +
+autolayer(fitted(s4), series="Fitted") +
+ylab("IR/GDP")
+```
+
+
+Holt method:
+
+```{r}
+hr1 <- holt(IRGDPts)
+summary(hr1)
+```
+
+BIC = -2508.153 
+
+```{r}
+hr1f <- holt(IRGDPts, h = 8, level = c(80, 95))
+autoplot(hr1f) +
+autolayer(fitted(hr1f), series="Fitted") +
+ylab("IR/GDP") + xlab("Year")
+```
+
+
+Holt-Winters method:
+
+```{r}
+hrw1 <- hw(IRGDPts)
+summary(hrw1)
+```
+
+BIC = -2337.041 
+
+
+```{r}
+hrw1f <- hw(IRGDPts, h = 8, level = c(80, 95))
+autoplot(hrw1f) +
+autolayer(fitted(hrw1f), series="Fitted") +
+ylab("IR/GDP") + xlab("Year")
+```
+
+
+

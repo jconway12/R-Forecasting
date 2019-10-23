@@ -1,0 +1,403 @@
+---
+title: "NXGDP"
+author: "Jesse Conway"
+date: "4/22/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+Data <- read_excel("~/Desktop/FinalPaperR/UpdatedData.xls")
+#View(Data)
+library(forecast)
+```
+
+```{r}
+NXGDP <- Data[1:236,8]
+NXGDPts <- ts(data = NXGDP, start = c(1960,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+
+NXGDP2 <- Data[5:236,8]
+NXGDP2ts <- ts(data = NXGDP2, start = c(1961,1), frequency = 4, end = c(2018,4)) # data start in 1960Q1 and end in 2018Q3)
+```
+
+ARIMA TESTING d = 0:
+
+mean trend:
+
+```{r}
+R000mean <- Arima(NXGDPts, order = c(0,0,0)) 
+summary(R000mean)
+RES_mean = residuals(R000mean)
+```
+
+BIC = -1205.03
+
+linear trend:
+
+```{r}
+R000lt <- Arima(NXGDPts, order = c(0,0,0), include.drift = TRUE) 
+summary(R000lt)
+```
+
+BIC = -1487.06
+
+trend + seasonal dummies:
+
+```{r}
+Sdum <- seasonaldummy(NXGDPts)
+R000sd <- Arima(NXGDPts, order = c(0,0,0), include.drift = TRUE, xreg = Sdum) 
+summary(R000sd)
+
+```
+
+BIC = -1470.78
+
+trend + seasonal differences:
+
+```{r}
+R000sf <- Arima(NXGDPts, order = c(0,0,0), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(R000sf)
+```
+
+BIC = -1687.74
+
+compare w/ same sample size:
+
+```{r}
+R0002 <- Arima(NXGDP2ts, order = c(0,0,0), include.drift = TRUE) 
+summary(R0002)
+```
+
+BIC = -1458.05
+
+best model:
+
+```{r}
+RESR00sf <- residuals(R000sf)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR00sf)
+Pacf(RESR00sf)
+
+```
+
+MA(3) or AR(3)
+
+ARIMA testing:
+
+```{r}
+Rma3 <- Arima(NXGDPts, order = c(0,0,3), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma3)
+```
+
+BIC = -2021.6
+
+
+```{r}
+Rar3 <- Arima(NXGDPts, order = c(3,0,0), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rar3)
+```
+
+BIC = -1916.73
+
+```{r}
+Rarma11 <- Arima(NXGDPts, order = c(1,0,1), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rarma11)
+```
+
+BIC = -1918.82
+
+```{r}
+Rma2 <- Arima(NXGDPts, order = c(0,0,2), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma2)
+```
+
+BIC = -1898.4
+
+```{r}
+Rma4 <- Arima(NXGDPts, order = c(0,0,4), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma4)
+```
+
+BIC = -2024.18
+
+```{r}
+Rarma13 <- Arima(NXGDPts, order = c(1,0,3), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rarma13)
+```
+
+BIC = -2022.85
+
+```{r}
+Rma5 <- Arima(NXGDPts, order = c(0,0,5), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rma5)
+```
+
+BIC = -2019.74
+
+```{r}
+Rarma14 <- Arima(NXGDPts, order = c(1,0,4), seasonal = c(0,1,0), include.drift = TRUE) 
+summary(Rarma14)
+```
+
+BIC = -2019.68
+
+So, MA(4) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rma4)
+```
+
+White noise!
+
+Forecast: QUESTION (what to forecast on)?
+
+```{r}
+plot(forecast(Rma4,h=8))
+for011 <- forecast(Rma4, h = 8)
+print(for011)
+```
+
+ARIMA TESTING d = 1:
+
+Test for a unit root just to see
+
+
+Let's run the KPSS and ADF tests:
+
+```{r}
+Rmean <- Arima(NXGDPts, order = c(0,0,0)) 
+ndiffs(RES_mean,test="kpss")
+ndiffs(RES_mean,test="adf")
+```
+
+This implies that there is a unit root, so lets see how taking it out changes the BIC:
+
+mean trend:
+
+```{r}
+R010mean <- Arima(NXGDPts, order = c(0,1,0)) 
+summary(R010mean)
+```
+
+BIC = -2082.74
+
+linear trend:
+
+```{r}
+R010lt <- Arima(NXGDPts, order = c(0,1,0), include.drift = TRUE) 
+summary(R010lt)
+```
+
+BIC = -2077.99
+
+trend + seasonal dummies:
+
+```{r}
+Sdum2 <- seasonaldummy(NXGDPts)
+R010sd <- Arima(NXGDPts, order = c(0,1,0), xreg = Sdum2) 
+summary(R010sd)
+
+```
+
+BIC = -2069.54
+
+trend + seasonal differences:
+
+```{r}
+R010sf <- Arima(NXGDPts, order = c(0,1,0), seasonal = c(0,1,0)) 
+summary(R010sf)
+```
+
+BIC = -1874.58
+
+compare w/ same sample size:
+
+```{r}
+R0102 <- Arima(NXGDP2ts, order = c(0,1,0)) 
+summary(R0102)
+```
+
+BIC = -2044.67
+
+best model:
+
+```{r}
+RESR010mean <- residuals(R010mean)
+```
+
+PAC's/ AC's:
+
+```{r}
+
+Acf(RESR010mean)
+Pacf(RESR010mean)
+
+```
+
+
+ARIMA testing:
+
+```{r}
+Rima11 <- Arima(NXGDPts, order = c(0,1,1)) 
+summary(Rima11)
+```
+
+BIC = -2084.17
+
+
+```{r}
+Rari11 <- Arima(NXGDPts, order = c(1,1,0)) 
+summary(Rari11)
+```
+
+BIC = -2083.34
+
+```{r}
+Rarima111 <- Arima(NXGDPts, order = c(1,1,1)) 
+summary(Rarima111)
+```
+
+BIC = -2079.28
+
+```{r}
+Rima12 <- Arima(NXGDPts, order = c(0,1,2)) 
+summary(Rima12)
+```
+
+BIC = -2079.29
+
+
+
+So, MA(1) is our best model.
+
+White noise?
+
+```{r}
+checkresiduals(Rima11)
+```
+
+White noise!
+
+Forecast: QUESTION (what to forecast on and how many quarters out)?
+
+```{r}
+plot(forecast(Rima11,h=8))
+for0112 <- forecast(Rima11, h = 8)
+print(for0112)
+```
+
+
+* forecasts 2 years out?
+
+SMOOTHING MODELS:
+
+Plot:
+
+```{r}
+library(ggplot2)
+autoplot(NXGDPts) +
+ylab("NX/GDP") + xlab("Year")
+```
+
+
+Simple Smoothing:
+
+```{r}
+s1 <- ses(NXGDPts, h = 8, level = c(80, 95), alpha = 0.1)
+autoplot(s1) +
+autolayer(fitted(s1), series="Fitted") +
+ylab("NX/GDP") + xlab("Year")
+```
+
+
+```{r}
+s2 <- ses(NXGDPts, h = 8, level = c(80, 95), alpha = 0.5)
+autoplot(s2) +
+autolayer(fitted(s2), series="Fitted") +
+ylab("NX/GDP") + xlab("Year")
+```
+
+
+```{r}
+s3 <- ses(NXGDPts, h = 8, level = c(80, 95), alpha = 0.9)
+autoplot(s3) +
+autolayer(fitted(s3), series="Fitted") +
+ylab("NX/GDP") + xlab("Year")
+```
+
+```{r}
+ss4 <- ses(NXGDPts)
+ summary(ss4)
+ 
+```
+
+BIC = -1461.962
+Alpha = 0.9999
+
+
+```{r}
+s4 <- ses(NXGDPts, h = 8, level = c(80, 95))
+autoplot(s4) +
+autolayer(fitted(s4), series="Fitted") +
+ylab("NX/GDP")
+```
+
+
+Holt method:
+
+```{r}
+hr1 <- holt(NXGDPts)
+summary(hr1)
+```
+
+BIC = -1448.729 
+
+```{r}
+hr1f <- holt(NXGDPts, h = 8, level = c(80, 95))
+autoplot(hr1f) +
+autolayer(fitted(hr1f), series="Fitted") +
+ylab("NX/GDP") + xlab("Year")
+```
+
+
+Holt-Winters method:
+
+```{r}
+hrw1 <- hw(NXGDPts)
+summary(hrw1)
+```
+
+BIC = -1302.186
+
+
+```{r}
+hrw1f <- hw(NXGDPts, h = 8, level = c(80, 95))
+autoplot(hrw1f) +
+autolayer(fitted(hrw1f), series="Fitted") +
+ylab("NX/GDP") + xlab("Year")
+```
+
+
+
+
+
+
+
+
+
+
+
+
